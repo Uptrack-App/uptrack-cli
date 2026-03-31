@@ -1,0 +1,36 @@
+{
+  "name": "@uptrack/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for Uptrack uptime monitoring",
+  "type": "module",
+  "bin": {
+    "uptrack": "./bin/uptrack.js"
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "scripts": {
+    "lint": "eslint src/",
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": [
+    "uptrack",
+    "uptime",
+    "monitoring",
+    "cli",
+    "cron",
+    "heartbeat",
+    "status-page"
+  ],
+  "author": "Uptrack <hello@uptrack.app>",
+  "license": "MIT",
+  "homepage": "https://uptrack.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uptrack-App/uptrack-cli.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
