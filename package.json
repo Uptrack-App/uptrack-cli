@@ -1,10 +1,10 @@
 {
   "name": "@uptrack-app/cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Command-line interface for Uptrack uptime monitoring",
   "type": "module",
   "bin": {
-    "uptrack": "./bin/uptrack.js"
+    "uptrack": "bin/uptrack.js"
   },
   "files": [
     "bin/",
@@ -28,7 +28,7 @@
   "homepage": "https://uptrack.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uptrack-App/uptrack-cli.git"
+    "url": "git+https://github.com/Uptrack-App/uptrack-cli.git"
   },
   "engines": {
     "node": ">=18"
