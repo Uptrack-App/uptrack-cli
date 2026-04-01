@@ -1,6 +1,6 @@
 {
   "name": "@uptrack-app/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Command-line interface for Uptrack uptime monitoring",
   "type": "module",
   "bin": {
