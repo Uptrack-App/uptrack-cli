@@ -1,85 +1,78 @@
-# @uptrack-app/cli
+# uptrack — monitoring-as-code CLI
 
-Command-line interface for [Uptrack](https://uptrack.app) uptime monitoring. Zero dependencies — uses Node 18+ native fetch.
+Manage your [Uptrack](https://uptrack.app) uptime monitors from your shell or CI.
+A small, dependency-free static binary (written in Rust) — a thin client over the
+public v2 API that does exactly what the dashboard does, nothing more.
 
 ## Install
 
 ```bash
-# Run directly (no install needed)
-npx @uptrack-app/cli list
-
-# Or install globally
-npm i -g @uptrack-app/cli
+# macOS / Linux — downloads the right binary for your OS/arch
+curl -fsSL https://raw.githubusercontent.com/Uptrack-App/uptrack-cli/main/install.sh | sh
 ```
 
-## Authentication
+Or grab a binary from the [latest release](https://github.com/Uptrack-App/uptrack-cli/releases/latest) and put it on your `PATH`:
 
-Set your API key (get one at [uptrack.app/dashboard/settings](https://uptrack.app/dashboard/settings)):
+| Platform | Asset |
+|---|---|
+| macOS (Apple Silicon) | `uptrack-aarch64-apple-darwin.tar.gz` |
+| macOS (Intel) | `uptrack-x86_64-apple-darwin.tar.gz` |
+| Linux (x86_64) | `uptrack-x86_64-unknown-linux-musl.tar.gz` |
+| Linux (arm64) | `uptrack-aarch64-unknown-linux-musl.tar.gz` |
+
+Verify with `SHA256SUMS` from the release.
+
+## Auth
 
 ```bash
-export UPTRACK_API_KEY=your_api_key
-```
-
-Or pass it per-command:
-
-```bash
-npx @uptrack-app/cli list --api-key=your_api_key
+export UPTRACK_API_KEY=utk_…                      # Settings → API keys in the dashboard
+export UPTRACK_API_URL=https://api.uptrack.app    # optional, this is the default
 ```
 
 ## Commands
 
-### List monitors
-
 ```bash
-uptrack list
+uptrack list                       # status, type, name, url, 30-day uptime
+uptrack status                     # up/down summary
+uptrack create --url https://example.com [--name "Home" --type http --interval 60]
+uptrack delete <name|id> [--yes]   # resolves by name or id; --yes to confirm
+uptrack export -o uptrack.yaml     # dump current monitors to YAML
+uptrack apply  -f uptrack.yaml     # create/update monitors to match the file
+  --dry-run                        # print the plan, change nothing
+  --prune --yes                    # also delete monitors not in the file
 ```
 
-```
-Status  Name           URL                        Interval  Uptime
-──────  ─────────────  ─────────────────────────  ────────  ──────
-● up    Production     https://example.com        60s       99.99%
-● up    API            https://api.example.com    30s       100%
-● down  Staging        https://staging.example.com 180s     98.5%
+## Monitors as code
 
-3 monitor(s)
-```
+Keep your monitors in a version-controlled YAML file and `apply` them from CI —
+review changes in a pull request, sync on merge.
 
-### Create a monitor
-
-```bash
-uptrack create --url https://example.com
-uptrack create --url https://api.example.com --name "API" --interval 30
-```
-
-### Check status
-
-```bash
-uptrack status
+```yaml
+monitors:
+  - name: Homepage
+    url: https://example.com
+    type: http
+    interval: 60
+  - name: Login keyword
+    url: https://example.com/login
+    type: keyword
+    keyword: "Sign in"
 ```
 
-```
-Monitors: 12 total
-  ● 11 up
-  ● 1 down
+Monitors are matched by **name** (case-insensitive): a name in the file that
+doesn't exist yet is created; one that exists is updated if its url / type /
+interval / keyword differ; `--prune` removes monitors absent from the file.
+`type` defaults to `http`; `interval` (seconds) and `keyword` are optional.
 
-Down monitors:
-  ● staging.example.com
-```
+### GitHub Actions example
 
-### Delete a monitor
-
-```bash
-uptrack delete <monitor-id>
-```
-
-### Help
-
-```bash
-uptrack help
+```yaml
+- run: curl -fsSL https://raw.githubusercontent.com/Uptrack-App/uptrack-cli/main/install.sh | sh
+- run: uptrack apply -f uptrack.yaml
+  env:
+    UPTRACK_API_KEY: ${{ secrets.UPTRACK_API_KEY }}
 ```
 
-## Links
+## License
 
-- [Uptrack](https://uptrack.app)
-- [API Docs](https://api.uptrack.app/api/openapi)
-- [Guides](https://uptrack.app/guides)
+MIT
