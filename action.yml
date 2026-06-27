@@ -1,0 +1,46 @@
+name: 'Uptrack monitoring-as-code'
+description: 'Apply or diff your uptrack.yaml against Uptrack from CI using the uptrack CLI'
+branding:
+  icon: 'activity'
+  color: 'green'
+
+inputs:
+  command:
+    description: 'apply or diff'
+    required: false
+    default: 'apply'
+  config:
+    description: 'Path to the config file'
+    required: false
+    default: 'uptrack.yaml'
+  args:
+    description: 'Extra flags passed through to the CLI, e.g. "--dry-run" or "--prune --yes"'
+    required: false
+    default: ''
+  api-key:
+    description: 'Uptrack API key — pass ${{ secrets.UPTRACK_API_KEY }}, never a literal'
+    required: true
+  api-url:
+    description: 'API base URL'
+    required: false
+    default: 'https://api.uptrack.app'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install uptrack CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        export UPTRACK_BIN_DIR="$RUNNER_TEMP/uptrack-bin"
+        mkdir -p "$UPTRACK_BIN_DIR"
+        curl -fsSL https://raw.githubusercontent.com/Uptrack-App/uptrack-cli/main/install.sh | sh
+        echo "$UPTRACK_BIN_DIR" >> "$GITHUB_PATH"
+    - name: uptrack ${{ inputs.command }}
+      shell: bash
+      env:
+        UPTRACK_API_KEY: ${{ inputs.api-key }}
+        UPTRACK_API_URL: ${{ inputs.api-url }}
+      run: |
+        set -euo pipefail
+        uptrack "${{ inputs.command }}" -f "${{ inputs.config }}" ${{ inputs.args }}

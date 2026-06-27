@@ -1,0 +1,42 @@
+# Example: sync your Uptrack monitors from CI.
+#
+# Copy to .github/workflows/uptrack.yml in your repo. On a pull request it shows
+# the drift (and fails the check if the live config doesn't match the file); on a
+# push to main it applies the changes.
+#
+# Add your API key as a repository secret named UPTRACK_API_KEY
+# (Settings → Secrets and variables → Actions). Get the key from the Uptrack
+# dashboard: Settings → API keys.
+
+name: uptrack
+
+on:
+  pull_request:
+    paths: ['uptrack.yaml']
+  push:
+    branches: [main]
+    paths: ['uptrack.yaml']
+
+jobs:
+  diff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Uptrack-App/uptrack-cli@v1
+        with:
+          command: diff            # exits non-zero on drift → the check fails
+          config: uptrack.yaml
+          api-key: ${{ secrets.UPTRACK_API_KEY }}
+
+  apply:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Uptrack-App/uptrack-cli@v1
+        with:
+          command: apply
+          config: uptrack.yaml
+          # args: '--prune --yes'   # uncomment to also delete monitors/channels absent from the file
+          api-key: ${{ secrets.UPTRACK_API_KEY }}

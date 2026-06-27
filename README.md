@@ -37,9 +37,10 @@ uptrack status                     # up/down summary
 uptrack create --url https://example.com [--name "Home" --type http --interval 60]
 uptrack delete <name|id> [--yes]   # resolves by name or id; --yes to confirm
 uptrack export -o uptrack.yaml     # dump current monitors to YAML
-uptrack apply  -f uptrack.yaml     # create/update monitors to match the file
+uptrack apply  -f uptrack.yaml     # create/update monitors + channels to match the file
   --dry-run                        # print the plan, change nothing
-  --prune --yes                    # also delete monitors not in the file
+  --prune --yes                    # also delete resources not in the file
+uptrack diff   -f uptrack.yaml     # show drift; exits non-zero if any (for CI gating)
 ```
 
 ## Monitors as code
@@ -64,14 +65,44 @@ doesn't exist yet is created; one that exists is updated if its url / type /
 interval / keyword differ; `--prune` removes monitors absent from the file.
 `type` defaults to `http`; `interval` (seconds) and `keyword` are optional.
 
-### GitHub Actions example
+### Alert channels (with secrets)
+
+Channels live alongside monitors and reconcile the same way (by name). Put
+secret-bearing fields behind `${ENV_VAR}` references so the file is safe to
+commit — they're resolved at apply time, and an unset variable fails the run
+before any change is made:
 
 ```yaml
-- run: curl -fsSL https://raw.githubusercontent.com/Uptrack-App/uptrack-cli/main/install.sh | sh
-- run: uptrack apply -f uptrack.yaml
-  env:
-    UPTRACK_API_KEY: ${{ secrets.UPTRACK_API_KEY }}
+alert_channels:
+  - name: Ops Slack
+    type: slack
+    config:
+      webhook_url: ${SLACK_WEBHOOK}   # resolved from the environment at apply time
 ```
+
+`export` intentionally dumps monitors only — it never writes resolved channel
+secrets to disk.
+
+### Drift detection for CI
+
+`uptrack diff -f uptrack.yaml` prints what `apply` would change and **exits
+non-zero when anything differs** — run it on pull requests so a stale config
+fails the check.
+
+### GitHub Action
+
+```yaml
+- uses: actions/checkout@v4
+- uses: Uptrack-App/uptrack-cli@v1
+  with:
+    command: apply              # or: diff
+    config: uptrack.yaml
+    # args: '--prune --yes'     # optional flags
+    api-key: ${{ secrets.UPTRACK_API_KEY }}
+```
+
+A full pull-request-diff / push-apply workflow is in
+[`examples/github-workflow.yml`](examples/github-workflow.yml).
 
 ## License
 
