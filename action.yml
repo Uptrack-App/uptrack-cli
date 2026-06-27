@@ -30,17 +30,31 @@ runs:
   steps:
     - name: Install uptrack CLI
       shell: bash
+      env:
+        # Run the install.sh bundled with THIS pinned action version — not an
+        # unpinned `curl | sh` from a moving branch.
+        UPTRACK_BIN_DIR: ${{ runner.temp }}/uptrack-bin
       run: |
         set -euo pipefail
-        export UPTRACK_BIN_DIR="$RUNNER_TEMP/uptrack-bin"
         mkdir -p "$UPTRACK_BIN_DIR"
-        curl -fsSL https://raw.githubusercontent.com/Uptrack-App/uptrack-cli/main/install.sh | sh
+        sh "$GITHUB_ACTION_PATH/install.sh"
         echo "$UPTRACK_BIN_DIR" >> "$GITHUB_PATH"
-    - name: uptrack ${{ inputs.command }}
+    - name: uptrack
       shell: bash
+      # Inputs go through env (NOT interpolated into the script body) so a value
+      # like `; rm -rf …` can't be injected into the shell. Args are split into
+      # argv with array expansion; the command is allowlisted.
       env:
         UPTRACK_API_KEY: ${{ inputs.api-key }}
         UPTRACK_API_URL: ${{ inputs.api-url }}
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_ARGS: ${{ inputs.args }}
       run: |
         set -euo pipefail
-        uptrack "${{ inputs.command }}" -f "${{ inputs.config }}" ${{ inputs.args }}
+        case "$INPUT_COMMAND" in
+          apply|diff) ;;
+          *) echo "invalid command: '$INPUT_COMMAND' (use 'apply' or 'diff')" >&2; exit 1 ;;
+        esac
+        read -r -a extra_args <<< "$INPUT_ARGS"
+        uptrack "$INPUT_COMMAND" -f "$INPUT_CONFIG" "${extra_args[@]}"
